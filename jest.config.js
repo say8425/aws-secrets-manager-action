@@ -7,3 +7,7 @@ module.exports = {
   },
   setupFiles: ['dotenv/config']
 }
+
+process.env = Object.assign(process.env, {
+  INPUT_OUTPUT_PATH: '.env'
+})

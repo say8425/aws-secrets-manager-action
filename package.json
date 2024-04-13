@@ -29,7 +29,7 @@
     "aws-sdk": "^2.1070.0"
   },
   "devDependencies": {
-    "@zeit/ncc": "^0.22.1",
+    "@vercel/ncc": "^0.38.1",
     "dotenv": "^8.2.0",
     "eslint": "7.4.0",
     "eslint-plugin-import": "^2.20.2",
