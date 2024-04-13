@@ -1,27 +1,27 @@
-name: 'aws-secrets-manager-actions'
-description: 'GitHub Actions for AWS Secrets Manager'
+name: "aws-secrets-manager-actions"
+description: "GitHub Actions for AWS Secrets Manager"
 inputs:
   SECRET_NAME:
-    description: 'Set secret name that you want to get.'
+    description: "Set secret name that you want to get."
     required: true
   AWS_ACCESS_KEY_ID:
-    description: 'Set Aws Access Key ID'
+    description: "Set Aws Access Key ID"
     required: false
   AWS_SECRET_ACCESS_KEY:
-    description: 'Set Aws Secret access Key'
+    description: "Set Aws Secret access Key"
     required: false
   AWS_SESSION_TOKEN:
-    description: 'Set Aws Session token Key'
+    description: "Set Aws Session token Key"
     required: false
   AWS_DEFAULT_REGION:
-    description: 'Set Aws default region'
+    description: "Set Aws default region"
     required: false
   OUTPUT_PATH:
-    description: 'Set output file where variables are write'
+    description: "Set output file where variables are write"
     required: false
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: "node20"
+  main: "dist/index.js"
 branding:
-  icon: 'lock'
-  color: 'orange'
+  icon: "lock"
+  color: "orange"

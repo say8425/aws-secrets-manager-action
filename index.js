@@ -3,7 +3,6 @@ const aws = require('aws-sdk')
 const fs = require('fs')
 
 const outputPath = core.getInput('OUTPUT_PATH')
-const secretName = core.getInput('SECRET_NAME')
 
 const AWSConfig = {
   accessKeyId: core.getInput('AWS_ACCESS_KEY_ID') || process.env.AWS_ACCESS_KEY_ID,
@@ -15,40 +14,41 @@ if (core.getInput('AWS_SESSION_TOKEN') || process.env.AWS_SESSION_TOKEN) {
   AWSConfig.sessionToken = core.getInput('AWS_SESSION_TOKEN') || process.env.AWS_SESSION_TOKEN
 }
 
-const secretsManager = new aws.SecretsManager(AWSConfig)
-
 async function getSecretValue (secretsManager, secretName) {
-  return secretsManager.getSecretValue({ SecretId: secretName }).promise()
-}
-
-getSecretValue(secretsManager, secretName).then(resp => {
-  const secretString = resp.SecretString
-  core.setSecret(secretString)
-
-  if (secretString == null) {
-    core.warning(`${secretName} has no secret values`)
-    return
-  }
-
   try {
-    const parsedSecret = JSON.parse(secretString)
-    Object.entries(parsedSecret).forEach(([key, value]) => {
-      core.setSecret(value)
-      core.exportVariable(key, value)
-    })
-    if (outputPath) {
-      const secretsAsEnv = Object.entries(parsedSecret).map(([key, value]) => `${key}=${value}`).join('\n')
-      fs.writeFileSync(outputPath, secretsAsEnv)
+    if (!secretsManager) {
+      secretsManager = new aws.SecretsManager(AWSConfig)
     }
-  } catch (e) {
-    core.warning('Parsing asm secret is failed. Secret will be store in asm_secret')
-    core.exportVariable('asm_secret', secretString)
-    if (outputPath) {
-      fs.writeFileSync(outputPath, secretString)
+
+    const resp = await secretsManager.getSecretValue({ SecretId: secretName }).promise()
+    const secretString = resp.SecretString
+    core.setSecret(secretString)
+
+    if (secretString == null) {
+      core.warning(`${secretName} has no secret values`)
+      return
     }
+
+    try {
+      const parsedSecret = JSON.parse(secretString)
+      Object.entries(parsedSecret).forEach(([key, value]) => {
+        core.setSecret(value)
+        core.exportVariable(key, value)
+      })
+      if (outputPath) {
+        const secretsAsEnv = Object.entries(parsedSecret).map(([key, value]) => `${key}=${value}`).join('\n')
+        fs.writeFileSync(outputPath, secretsAsEnv)
+      }
+    } catch (e) {
+      core.warning('Parsing asm secret is failed. Secret will be store in asm_secret')
+      core.exportVariable('asm_secret', secretString)
+      if (outputPath) {
+        fs.writeFileSync(outputPath, secretString)
+      }
+    }
+  } catch (err) {
+    core.setFailed(err)
   }
-}).catch(err => {
-  core.setFailed(err)
-})
+}
 
 exports.getSecretValue = getSecretValue

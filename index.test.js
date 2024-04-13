@@ -2,54 +2,37 @@ const aws = require('aws-sdk')
 const index = require('./index.js')
 
 describe('get SecretString from AWS SecretsManager', () => {
-  let data = {}
-  describe('get parsable data', () => {
-    beforeAll(async () => {
-      const INPUT_SECRET_NAME = process.env.SECRET_NAME
-
-      const AWSConfig = {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region: process.env.AWS_DEFAULT_REGION
-      }
-
-      if (process.env.AWS_SESSION_TOKEN) {
-        AWSConfig.sessionToken = process.env.AWS_SESSION_TOKEN
-      }
-
-      const secretsManager = new aws.SecretsManager(AWSConfig)
-      data = await index.getSecretValue(secretsManager, INPUT_SECRET_NAME)
-    })
-
-    test('should have SecretString', () => {
-      expect(data).toHaveProperty('SecretString')
-    })
-
-    test('should have parsed values', () => {
-      const parsedData = JSON.parse(data.SecretString)
-      expect(parsedData.SCIENTIFIC_NAME).toEqual('Pygoscelis adeliae')
-      expect(parsedData.MIN_HEIGHT).toEqual(46)
-      expect(parsedData.MAX_HEIGHT).toEqual(71)
-      expect(parsedData.MIN_WEIGHT).toEqual(3.6)
-      expect(parsedData.MAX_WEIGHT).toEqual(6)
-      expect(parsedData.SWIMMING_SPEED).toEqual(8)
-      expect(parsedData.LEAPING_METERS).toEqual(3)
-    })
+  const secretsManager = new aws.SecretsManager({
+    accessKeyId: 'fake-access-key-id',
+    secretAccessKey: 'fake-secret',
+    region: 'us-east-1'
   })
 
-  describe('get unparsable data', () => {
-    beforeAll(async () => {
-      const INPUT_SECRET_NAME = `${process.env.SECRET_NAME}-unvalid`
-      const secretsManager = new aws.SecretsManager({
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region: process.env.AWS_DEFAULT_REGION
-      })
-      data = await index.getSecretValue(secretsManager, INPUT_SECRET_NAME)
-    })
+  const secretName = 'secretName'
 
-    test('should have SecretString', () => {
-      expect(data).toHaveProperty('SecretString')
-    })
+  const secretString = JSON.stringify({
+    key1: 'value1',
+    key2: 'value2'
+  })
+
+  const resp = {
+    SecretString: secretString
+  }
+
+  secretsManager.getSecretValue = jest.fn().mockReturnValue({
+    promise: jest.fn().mockResolvedValue(resp)
+  })
+
+  it('should have parsed values', async () => {
+    await index.getSecretValue(secretsManager, secretName)
+    expect(process.env.key1).toEqual('value1')
+    expect(process.env.key2).toEqual('value2')
+  })
+
+  it('should have written to file', async () => {
+    const fs = require('fs')
+    const outputPath = '.env'
+    await index.getSecretValue(secretsManager, secretName)
+    expect(fs.readFileSync(outputPath, 'utf8')).toEqual('key1=value1\nkey2=value2')
   })
 })
